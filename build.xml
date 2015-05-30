@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="jmxcli" default="run" basedir=".">
+	<description>JMX command-line utility</description>
+
+	<target name="compile" description="Compile the Java code.">
+		<mkdir dir="classes" />
+		<javac srcdir="src" destdir="classes" debug="true" includeantruntime="false" />
+		<jar destfile="jmxcli.jar" basedir="classes" includes="jmxcli/*.class" manifest="MANIFEST" />
+	</target>
+
+	<target name="run" depends="compile"
+			  description="Run the Java application.">
+		<java classname="jmxcli.Main" fork="true">
+			<jvmarg value="-Dcom.sun.management.jmxremote.port=12345" />
+			<jvmarg value="-Dcom.sun.management.jmxremote.ssl=false" />
+			<jvmarg value="-Dcom.sun.management.jmxremote.password.file=passwd" />
+			<jvmarg value="-Dcom.sun.management.jmxremote.access.file=access" />
+
+			<arg value="--host" />
+			<arg value="localhost" />
+
+			<arg value="--port" />
+			<arg value="12345" />
+
+			<arg value="--user" />
+			<arg value="user" />
+
+			<arg value="--pass" />
+			<arg value="sekrit" />
+
+			<classpath>
+				<pathelement path="classes" />
+			</classpath>
+		</java>
+	</target>
+</project>

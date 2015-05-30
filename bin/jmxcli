@@ -1,0 +1,86 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use Getopt::Long qw/:config bundling/;
+
+my %OPTIONS = (
+	host                 => 'localhost',
+	port                 => '9999',
+	dotify               => 1,
+	type                 => 'SAMPLE',
+	'include-beans'      => '.',
+	'exclude-beans'      => '^$',
+	'include-attributes' => '.',
+	'exclude-attributes' => '^$',
+	jar                  => 'jmxcli.jar', # FIXME: FindBin!
+);
+GetOptions(\%OPTIONS, qw/
+	help|h|?
+	debug|D
+
+	host|H=s
+	port|P=s
+
+	prefix|n=s
+	bean|N=s
+	dotify!
+	type|t=s
+
+	username|u=s
+	password|p=s
+
+	exclude-beans|x=s
+	include-beans|i=s
+
+	exclude-attributes|X=s
+	include-attributes|I=s
+
+	jar=s
+/);
+
+sub dotify
+{
+	my ($name) = @_;
+	$name =~ s/\s+//;
+	$name =~ s/^([A-Z])/lc($1)/e;
+	$name =~ s/([A-Z]+)/'.'.lc($1)/eg;
+	return $name;
+}
+
+chomp($OPTIONS{prefix} = qx(hostname -f)) unless $OPTIONS{prefix};
+
+my %exclude = (
+	bean => $OPTIONS{'exclude-beans'} ? qr/$OPTIONS{'exclude-beans'}/i : undef,
+	attr => $OPTIONS{'exclude-attributes'} ? qr/$OPTIONS{'exclude-attributes'}/i : undef,
+);
+my %include = (
+	bean => qr/$OPTIONS{'include-beans'}/i,
+	attr => qr/$OPTIONS{'include-attributes'}/i,
+);
+
+my @args = (
+	(map { "-Dcom.sun.management.jmxremote.$_" } (qw/port=12345 ssl=false authenticate=false/)),
+	'-jar', $OPTIONS{jar},
+	'--host', $OPTIONS{host},
+	'--port', $OPTIONS{port},
+);
+
+open my $cli, "-|", "java", @args
+	or die "Failed to run jmxcli.jar: $!\n";
+my $ts = time;
+while (<$cli>) {
+	chomp;
+	my ($bean, $attr, $value) = split /\t/;
+	$attr = dotify($attr) if $OPTIONS{dotify};
+
+	next unless $bean =~ $include{bean};
+	next if     $bean =~ $exclude{bean};
+
+	next unless $attr =~ $include{attr};
+	next if     $attr =~ $exclude{attr};
+
+	printf "%s %i %s:%s:%s %s\n",
+		$OPTIONS{type}, $ts, $OPTIONS{prefix},
+		$OPTIONS{bean} || $bean, $attr, $value;
+}
