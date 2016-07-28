@@ -37,7 +37,7 @@ GetOptions(\%OPTIONS, qw/
 	include-attributes|I=s
 
 	jar=s
-/);
+/) or die "USAGE: ...\n";
 
 sub dotify
 {
