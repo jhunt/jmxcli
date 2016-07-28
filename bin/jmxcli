@@ -65,6 +65,9 @@ my @args = (
 	'--host', $OPTIONS{host},
 	'--port', $OPTIONS{port},
 );
+@args = (@args, '--user', $OPTIONS{username}) if $OPTIONS{username};
+@args = (@args, '--pass', $OPTIONS{password}) if $OPTIONS{password};
+@args = (@args, @ARGV);
 
 open my $cli, "-|", "java", @args
 	or die "Failed to run jmxcli.jar: $!\n";
