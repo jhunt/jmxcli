@@ -24,7 +24,9 @@
 
 use strict;
 use warnings;
-use Getopt::Long qw/:config bundling/;
+use Getopt::Long   qw/:config bundling/;
+use Cwd            qw/abs_path/;
+use File::Basename qw/dirname/;
 
 our $VERSION = "1.0.0";
 my %OPTIONS = (
@@ -36,7 +38,7 @@ my %OPTIONS = (
 	'exclude-beans'      => '^$',
 	'include-attributes' => '.',
 	'exclude-attributes' => '^$',
-	jar                  => 'jmxcli.jar', # FIXME: FindBin!
+	jar                  => '',
 );
 GetOptions(\%OPTIONS, qw/
 	help|h|?
@@ -76,7 +78,33 @@ sub dotify
 	return $name;
 }
 
+sub debug($)
+{
+	print STDERR "DEBUG> $_[0]\n" if $OPTIONS{debug};
+}
+
 chomp($OPTIONS{prefix} = qx(hostname -f)) unless $OPTIONS{prefix};
+unless ($OPTIONS{jar}) {
+	for my $path (
+		abs_path(dirname($0)),
+		abs_path(dirname($0)."/.."),
+		abs_path(dirname($0)."/../lib"),
+		qw(
+			/usr
+			/usr/local
+			/opt/jmxcli
+		),
+		"$ENV{HOME}/.jmxcli") {
+		debug "Looking for jmxcli.jar in $path/lib";
+
+		next unless -f "$path/lib/jmxcli.jar";
+		$OPTIONS{jar} = "$path/lib/jmxcli.jar";
+		last;
+	}
+}
+die "No --jar option specified, and jmxcli.jar not found on the system.\n"
+	unless $OPTIONS{jar};
+debug "Using jmxcli.jar at $OPTIONS{jar}";
 
 my %exclude = (
 	bean => $OPTIONS{'exclude-beans'} ? qr/$OPTIONS{'exclude-beans'}/i : undef,
