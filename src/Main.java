@@ -108,7 +108,7 @@ public class Main {
 				continue;
 			}
 
-			if (args[i].equals("-p") || args[i].equals("--port")) {
+			if (args[i].equals("-P") || args[i].equals("--port")) {
 				PORT = args[++i];
 				continue;
 			}
